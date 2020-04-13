@@ -1,4 +1,4 @@
-Code to reproduce analyses and figures of the paper:
+__Code to reproduce analyses and figures of the paper:__
 
 Rillo, MC, Sugawara, MTC, Cabella, B, Jonkers, L, Baranowski, UK, Kučera, M, & Ezard, THG. __On the mismatch in the strength of competition among fossil and modern species of planktonic Foraminifera.__ _Global Ecol Biogeogr._ 2019; 28: 1866– 1878. [https://doi.org/10.1111/geb.13000](https://doi.org/10.1111/geb.13000) 
 
