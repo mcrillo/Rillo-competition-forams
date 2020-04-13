@@ -1,8 +1,8 @@
 Code to reproduce analyses and figures of the paper:
 
-## Rillo, MC, Sugawara, MTC, Cabella, B, Jonkers, L, Baranowski, UK, Kučera, M, & Ezard, THG. On the mismatch in the strength of competition among fossil and modern species of planktonic Foraminifera. _Global Ecol Biogeogr._ 2019; 28: 1866– 1878. [https://doi.org/10.1111/geb.13000](https://doi.org/10.1111/geb.13000) 
+#### Rillo, MC, Sugawara, MTC, Cabella, B, Jonkers, L, Baranowski, UK, Kučera, M, & Ezard, THG. On the mismatch in the strength of competition among fossil and modern species of planktonic Foraminifera. _Global Ecol Biogeogr._ 2019; 28: 1866– 1878. [https://doi.org/10.1111/geb.13000](https://doi.org/10.1111/geb.13000) 
 
-# Abstract  
+##### Abstract  
 
 __Aim__  
 Many clades display the macroevolutionary pattern of a negative relationship between standing diversity and diversification rates. Competition among species has been proposed as the main mechanism that explains this pattern. However, we currently lack empirical insight into how the effects of individual‐level ecological interactions scale up to affect species diversification. Here, we investigate a clade that shows evidence for negative diversity‐dependent diversification in the fossil record and test whether the clade's modern communities show a corresponding signal of interspecific competition.  
