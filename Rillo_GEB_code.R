@@ -8,7 +8,6 @@ setwd("/Users/marinacostarillo/Google Drive/PhD/projects")
 setwd("./competition-forams")
 
 
-
 if (!file.exists("output_spatial/")){ dir.create("output_spatial/")}
 
 #  Libraries and functions
