@@ -2,72 +2,11 @@
 ########################################################################
 ### Functions main_time-series (sediment trap data)
 ########################################################################
-### Libraries 
-
-library(lubridate)  # date calculations 
-library(GGally)     # ggpairs function
-library(network)
-library(sna)
-library(tseries)    # tests series stationary
-library(reshape)    # function melt
-library(corrplot)   # matrix correlation plot
-library(vegan)      # diversity function
-library(lme4)
-
-library(ggplot2)    # plots
-library(viridis)    # color palette
-library(cowplot)    # scatterplot with density plot 
-library(ggbeeswarm) # geom_quasirandom
-library(grid)       # grid.draw
-library(xtable)     # prints table in Latex format
-library(ggrepel)    # geom_text_repel
-library(igraph)     # graph.data.frame
-
-library(paleotree) # dropExtinct
-library(phytools) # phylogeny
-library(geosphere)
-
-########################################################################
-
-get_relat_abund <- function(data, trap_name, overwrite){ # data.frame, string
-  ### Functions
-  ### Description
-  # 
-  ### Arguments
-  # 
-  
-  if(overwrite == TRUE | !file.exists(paste("data/traps_relat_abund/",trap_name,"_relat_abund.csv",sep=""))){
-    
-    # Subsetting data to just shell abundance columns
-    datarel <- data[,(which(colnames(data)=="cum_days")+1):ncol(data)]
-    if(any(colnames(datarel)=="sst")) datarel <- datarel[,-which(colnames(datarel)=="sst")]
-    
-    # Calculating total shell abundance per sample
-    total_abund <- data.frame(total_abund = rowSums(datarel))
-    
-    # Calculating relative abundances per sample
-    datarel <- datarel/total_abund$total_abund
-    # rowSums(datarel) # double-check
-    
-    datarel <- cbind(open=ymd(data[,"open"]), datarel, total_abund)
-    
-    write.csv(datarel, paste("data/traps_relat_abund/",trap_name,"_relat_abund.csv",sep=""), row.names = FALSE)
-    return (datarel)
-    
-  }else{
-    
-    datarel <- read.csv(paste("data/traps_relat_abund/",trap_name,"_relat_abund.csv",sep=""), header = TRUE)
-    return (datarel)
-  }
-  
-}
-
-########################################################################
 
 get_first_diff <- function(data, trap_name, days_closed, overwrite){ # data.frame, string
   # days_closed : maximum number of days inbetween samples,if that gap between two samples is bigger than 10 days (next_open > 10 days), then the difference between these two samples is not included
   
-  if(overwrite == TRUE | !file.exists(paste("data/traps_first_diff/",trap_name,"_first_diff.csv",sep=""))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps_first_diff/",trap_name,"_first_diff.csv",sep=""))){
     
     # Differentiating data
     datafd <- as.data.frame(apply(data[,(which(colnames(data)=="cum_days")+1):ncol(data)], 2, diff))
@@ -79,12 +18,12 @@ get_first_diff <- function(data, trap_name, days_closed, overwrite){ # data.fram
       datafd <- datafd[-rows,] 
     }
     
-    write.csv(datafd, paste("data/traps_first_diff/",trap_name,"_first_diff.csv",sep=""), row.names = FALSE)
+    write.csv(datafd, paste("output/traps_first_diff/",trap_name,"_first_diff.csv",sep=""), row.names = FALSE)
     return (datafd)
     
   }else{
     
-    datafd <- read.csv(paste("data/traps_first_diff/",trap_name,"_first_diff.csv",sep=""), header = TRUE)
+    datafd <- read.csv(paste("output/traps_first_diff/",trap_name,"_first_diff.csv",sep=""), header = TRUE)
     return (datafd)
   }
   
@@ -121,7 +60,7 @@ cormatrix <- function(mat, cormethod, conf.level = 0.95){
 test_stationary <- function(data, trap_name, overwrite){ 
   
   
-  if(overwrite == TRUE | !file.exists(paste("output_time/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""))){
     
     
     statio <- data.frame()
@@ -149,7 +88,7 @@ test_stationary <- function(data, trap_name, overwrite){
     
     statio <- statio[-1,]
     
-    write.csv(statio, paste("output_time/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""), row.names = FALSE)
+    write.csv(statio, paste("output/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""), row.names = FALSE)
     
     return(statio)
     
@@ -158,7 +97,7 @@ test_stationary <- function(data, trap_name, overwrite){
     
   }else{
     
-    statio <- read.csv(paste("output_time/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""), header = TRUE)
+    statio <- read.csv(paste("output/traps/",trap_name,"/stationary_test_",trap_name,".csv",sep=""), header = TRUE)
     return (statio)
   }
   
@@ -169,7 +108,7 @@ test_stationary <- function(data, trap_name, overwrite){
 cross_correlation <- function(data, trap_name, overwrite){ 
   
   
-  if(overwrite == TRUE | !file.exists(paste("output_time/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""))){
     
     
     ccf_all <- data.frame()
@@ -212,12 +151,12 @@ cross_correlation <- function(data, trap_name, overwrite){
     
     ccf_all[,grep(names(ccf_all), pattern=c("corr"))] <- round(ccf_all[,grep(names(ccf_all), pattern=c("corr"))],2)
     
-    write.csv(ccf_all, paste("output_time/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""), row.names = FALSE)
+    write.csv(ccf_all, paste("output/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""), row.names = FALSE)
     return(ccf_all)
     
   }else{
     
-    ccf_all <- read.csv(paste("output_time/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""), header = TRUE)
+    ccf_all <- read.csv(paste("output/traps/",trap_name,"/cross_correlation_",trap_name,".csv",sep=""), header = TRUE)
     return (ccf_all)
   }
   
@@ -237,7 +176,7 @@ seasonal_splines <- function(DataSeries,DateFormat, SavePlots, overwrite){
   #           csv file with the seasonality for all variables in DataFile   
   #---
   
-  if(overwrite == TRUE | !file.exists(paste("output_time/traps/",trap_name,"/splines_",trap_name,".csv",sep=''))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps/",trap_name,"/splines_",trap_name,".csv",sep=''))){
     
     # read data
     DateCol=1 # "open" column
@@ -277,27 +216,27 @@ seasonal_splines <- function(DataSeries,DateFormat, SavePlots, overwrite){
       
       # test of how seasonal a species is: correlation of raw data with spline
       # SspSeasonal <- rbind(SspSeasonal, data.frame(variable = VariablesNames[i], correlation = cor(spline$data$y, spline$y)))
-      # write.csv(SspSeasonal,"output_time/splines/seasonal_species_corr.csv",row.names = F)
+      # write.csv(SspSeasonal,"output/splines/seasonal_species_corr.csv",row.names = F)
       # cor(DataSeries[,i],SeasonalDataAux[MatchDate])
       
       # save plot
       if (SavePlots==T){
-        if (!file.exists(paste("output_time/traps/",trap_name,"/splines_plots",sep=""))){ dir.create(paste("output_time/traps/",trap_name,"/splines_plots/",sep=""))}
+        if (!file.exists(paste("output/traps/",trap_name,"/splines_plots",sep=""))){ dir.create(paste("output/traps/",trap_name,"/splines_plots/",sep=""))}
         setEPS()
-        postscript(paste("output_time/traps/",trap_name,"/splines_plots/",VariablesNames[i],'_',trap_name,'.eps',sep=''),width=8.5,height=6)
+        postscript(paste("output/traps/",trap_name,"/splines_plots/",VariablesNames[i],'_',trap_name,'.eps',sep=''),width=8.5,height=6)
         plot(OriginalDate,DataSeries[,i],ylab=VariablesNames[i],xlab='date')
         lines(OriginalDate,Seasonal[,i],col='blue',lwd=2)
         dev.off()
       } # if
     } # for
     
-    # store original date in output_time
+    # store original date in output
     Seasonal[,1]<-format(as.Date(OriginalDate,'%y-%m-%d'),'%Y-%m-%d')
     # insert columns names
     colnames(Seasonal)<-VariablesNames
-    # write csv output_time file
+    # write csv output file
     
-    write.csv(Seasonal,paste("output_time/traps/",trap_name,"/splines_",trap_name,".csv",sep=''),row.names = F)
+    write.csv(Seasonal,paste("output/traps/",trap_name,"/splines_",trap_name,".csv",sep=''),row.names = F)
     
     splines <- as.data.frame(Seasonal, stringsAsFactors = FALSE)
     splines[,2:ncol(splines)]<- sapply(splines[,2:ncol(splines)], as.numeric)
@@ -312,14 +251,14 @@ seasonal_splines <- function(DataSeries,DateFormat, SavePlots, overwrite){
       seasonality_species[i,"corr_spline"] <- cor(splines[,i], data[,i])
     }
     seasonality_species <- seasonality_species[-1,]
-    write.csv(seasonality_species, paste("output_time/traps/",trap_name,"/seasonality_",trap_name,".csv",sep=''),row.names = F)
+    write.csv(seasonality_species, paste("output/traps/",trap_name,"/seasonality_",trap_name,".csv",sep=''),row.names = F)
     
     
     return(splines)
     
   }else{
     
-    splines <- read.csv(paste("output_time/traps/",trap_name,"/splines_",trap_name,".csv",sep=''), header = TRUE)
+    splines <- read.csv(paste("output/traps/",trap_name,"/splines_",trap_name,".csv",sep=''), header = TRUE)
     return (splines)
   }
   
@@ -330,7 +269,7 @@ seasonal_splines <- function(DataSeries,DateFormat, SavePlots, overwrite){
 corr_surrogates <- function(data, splines, trap_name, nreps, corr_method, overwrite){     
   
   
-  if(overwrite == TRUE | !file.exists(paste("output_time/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""))){
     
     # (1) # Randomization of residuals of (data - splines)
     # data.frame(data = data[,i], spline = splines[,i], resid = data[,i] - splines[,i])
@@ -419,12 +358,12 @@ corr_surrogates <- function(data, splines, trap_name, nreps, corr_method, overwr
     
     corr_pairs[,1:2] <- data.frame(lapply(corr_pairs[,1:2], as.character), stringsAsFactors=FALSE)
     
-    write.csv(corr_pairs, paste("output_time/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""), row.names = F)
+    write.csv(corr_pairs, paste("output/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""), row.names = F)
     return(corr_pairs)
     
   }else{
     
-    corr_pairs <- read.csv(paste("output_time/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""), header = TRUE, stringsAsFactors = FALSE)
+    corr_pairs <- read.csv(paste("output/traps/",trap_name,"/corr_surrogates_",trap_name,".csv",sep=""), header = TRUE, stringsAsFactors = FALSE)
     return (corr_pairs)
   }
   
@@ -434,9 +373,9 @@ corr_surrogates <- function(data, splines, trap_name, nreps, corr_method, overwr
 
 corr_surrogates_boxplots <- function(corr_surrog, trap_name, overwrite){     
   
-  if(overwrite == TRUE | !file.exists(paste("output_time/traps/",trap_name,"/corr_surrogates_boxplots",sep=""))){
+  if(overwrite == TRUE | !file.exists(paste("output/traps/",trap_name,"/corr_surrogates_boxplots",sep=""))){
     
-    if (!file.exists(paste("output_time/traps/",trap_name,"/corr_surrogates_boxplots",sep=""))){ dir.create(paste("output_time/traps/",trap_name,"/corr_surrogates_boxplots",sep="")) }
+    if (!file.exists(paste("output/traps/",trap_name,"/corr_surrogates_boxplots",sep=""))){ dir.create(paste("output/traps/",trap_name,"/corr_surrogates_boxplots",sep="")) }
     
     for(i in unique(c(corr_surrog$var1,corr_surrog$var2))){ # i = "G_cal"
       
@@ -468,9 +407,9 @@ corr_surrogates_boxplots <- function(corr_surrog, trap_name, overwrite){
         p <- p + geom_point(data = corr_subset[which(corr_subset$surr_p>0.975),], aes(x = factor(group), y = 1.05), color = 'red',shape = 8, size = 3)
       }
       
-      p <- p + geom_text(data = corr_subset, aes(x = factor(group), y = -1.05, label=round(corr_subset$ses_surr, 2)), color = 'red', size = 3)
+      p <- p + geom_text(data = corr_subset, aes(x = factor(group), y = -1.05, label=round(ses_surr, 2)), color = 'red', size = 3)
       
-      pdf(file =  paste("output_time/traps/",trap_name,"/corr_surrogates_boxplots/",i,"_",trap_name,"2.pdf",sep=""), width=length(corr_subset$group), height=5, paper = "special")
+      pdf(file =  paste("output/traps/",trap_name,"/corr_surrogates_boxplots/",i,"_",trap_name,"2.pdf",sep=""), width=length(corr_subset$group), height=5, paper = "special")
         print(p)
       dev.off()  
       

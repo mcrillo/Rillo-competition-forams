@@ -10,6 +10,7 @@
 # Author: Marina Costa Rillo
 # Date: 30/01/2019
 #====================================================
+
 rm(list=ls())
 
 # Working directory 
@@ -28,20 +29,26 @@ ipak <- function(pkg){
   sapply(pkg, require, character.only = TRUE)
 }
 
-packages <-c('dplyr',
+packages <-c('corrplot', # matrix correlation plot
+             'dplyr',
              'GGally',
+             'ggbeeswarm', # geom_quasirandom
              'ggplot2',
-             'ggrepel',  # geom_text_repel
+             'ggrepel', # geom_text_repel
              'ggforce', # geom_sina
+             'igraph',
+             'lubridate', # trap dates
              'mapproj', # map.grid
              'paleotree', # dropExtinct
              'phytools', # plotTree
              'plyr',
              'picante', # community phylogenetics
              'reshape', # function melt
+             'tseries',
              'viridis') #  gradient color plot
 
 ipak(packages)
+
 
 #*************************************************************************************************
 ### DATA ***
@@ -71,7 +78,9 @@ colnames(d)[grep("tenell",colnames(d))] <- "Globoturborotalita_tenella"
 
 
 ## Sediment trap data (temporal) ------------------------------------------------------------------------
-# Temporal: sediment trap data from 31 studies, see Table for full reference
+# Temporal: sediment trap data from 31 studies, see "data/traps_metadata.csv" or paper for full reference
+traps <- sub(x=list.files(path = "data/traps_time/")[grep(list.files(path = "data/traps_time/"),pattern=".csv")], pattern=".csv", replacement = "")
+traps_meta <- read.csv(file="data/traps_metadata.csv", header=TRUE, stringsAsFactors = FALSE)
 
 
 ## Phylogeny data (macroperforates) ---------------------------------------------------------------------
@@ -116,9 +125,6 @@ sp_diam <- rbind(sp_diam, c(sp_diam[which(sp_diam$species == "ruber"),c("species
 ### Spatial analysis ***
 #***********************
 
-# Functions
-source("R/functions_space.R")
-
 # Subseting data to species and lat, long and SST (woa)
 comm <- as.matrix(d[,c(5,6,68,69,22:62)]) 
 # Tranforming NA into zero, otherwise function in analysis returns NA
@@ -134,10 +140,13 @@ traitdist <- as.matrix(dist(data.frame(sp_diam$mean, row.names = sp_diam$sspname
 
 # Setting variables
 null <- c("taxa","richness") # "sample.pool" 
-nruns <- 10
+nruns <- 5
 
 # Running community phylogenetics analyses (picante) for both null models
-print("Spatial analysis: community phylogenetics ---------------------")
+print("------------------------------------------")
+print("Spatial analysis: community phylogenetics")
+print("------------------------------------------")
+
 for(i in 1:length(null)){
   print(paste0("Null model: ", null[i]))
   
@@ -235,7 +244,7 @@ for(i in 1:length(null)){
 #***************************************************************************************************
 ### Spatial plots ***
 #********************
-
+print("Generating spatial plots")
 
 # Preparing to merge both datasets (for richness null model)
 null_model <- 'richness'
@@ -268,7 +277,7 @@ ggplot(data = data_plot, aes(y = -obs.z, x = woa_tmn, group=sst_round)) +
   labs(x = expression("Annual mean sea-surface temperature ("*degree*"C)"), y = NULL) +
   theme_bw(base_size = 16) +
   scale_x_continuous(breaks = seq(0,30,5),limits=c(-2.5,31), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(-4,4,2),limits=c(-5,5), expand = c(0, 0)) +
+  #scale_y_continuous(breaks = seq(-4,4,2),limits=c(-5,5), expand = c(0, 0)) +
   facet_grid(metric~distance, scales = "fixed", switch = "y") +
   theme(axis.title = element_text(colour = 'black', size = 16),
         axis.text = element_text(colour = 'black', size = 16),
@@ -282,32 +291,22 @@ dev.off()
 
 # Calculating average shell size per commuity
 row.names(sp_diam) <- sp_diam$sspname
-trait <- sp_diam[,"mean", drop=F]
-comm_size <- comm[,which(colnames(comm) %in% row.names(trait))]
+size  <- sp_diam[,"mean", drop=F]
+comm_size <- comm[,which(colnames(comm) %in% row.names(sp_diam))]
 comm_size <- comm_size[,order(colnames(comm_size))]
-size <- trait[which(row.names(trait) %in% colnames(comm_size)),,drop = F]
+size <- size[which(row.names(size) %in% colnames(comm_size)),,drop = F]
 size <- size[order(row.names(size)),, drop=F]
 # data.frame(colnames(comm_size),row.names(size)) # check 
 d_size <- comm_size*size[col(comm_size)]
-d_size_mean <- cbind(comm[,c("Latitude","Longitude","woa_tmn","woa_tsd")], size_mean_0 = rowMeans(d_size))
 d_size[which(d_size == 0)] <- NA
-d_size_mean <- cbind(d_size_mean, size_mean_no0 = rowMeans(d_size, na.rm = T))
+
+d_size_mean <- cbind(comm[,c("Latitude","Longitude","woa_tmn","woa_tsd")], size_mean_0 = rowMeans(d_size))
 d_size_mean <- cbind(d_size_mean, size_sum = rowSums(d_size, na.rm = T))
-d_size_mean <- as.data.frame(d_size_mean)
-dim(d_size_mean)
 
 data_size <- merge(data_plot[which(data_plot$distance == "Shell size" ),], d_size_mean)
-data_size$size_mean_norm <- data_size$size_mean_0 / max(data_size$size_mean_0)
-data_size$size_mean_no0_norm <- data_size$size_mean_no0 / max(data_size$size_mean_no0)
-data_size$size_sum_norm <- data_size$size_sum / max(data_size$size_sum)
-
-data_size$size_mean_norm_round <- 0.05*round(data_size$size_mean_norm/0.05)
-data_size$size_mean_no0_norm_round <- 0.05*round(data_size$size_mean_no0_norm/0.05)
-data_size$size_mean_norm_round <- 0.05*round(data_size$size_mean_norm/0.05)
-data_size$size_sum_norm_round <- 0.05*round(data_size$size_sum_norm/0.05)
+data_size <- merge(data_size, comm)
 data_size$size_sum_round <- 25*round(data_size$size_sum/25)
 
-data_size <- merge(data_size, comm)
 
 
 png(paste("output/si_fig_ses_",null_model,nruns,"_comm_size.png", sep =""), width = 4, height = 5, unit = "in", res = 400)
@@ -325,8 +324,8 @@ ggplot(data_size, aes(x = size_sum, y = -obs.z, group = size_sum_round)) +
         strip.placement.y = "outside",
         strip.background = element_blank(),
         strip.text = element_text(colour = 'black', size = 12)) +  
-  scale_x_continuous(breaks = seq(0, 600, 100), limits=c(0,700), expand = c(0,0)) +
-  scale_y_continuous(breaks = seq(-4,2,2),limits=c(-5,4), expand = c(0, 0))
+  scale_x_continuous(breaks = seq(0, 600, 100), limits=c(0,700), expand = c(0,0))
+  # scale_y_continuous(breaks = seq(-4,2,2),limits=c(-5,4), expand = c(0, 0))
 dev.off()
 
 # for each species
@@ -334,30 +333,37 @@ metric = "NTI" # or NRI; community phylogenetic metric
 
 if (!file.exists("output/spatial_species/")){ dir.create("output/spatial_species/")}
 
-for (i in 27:ncol(data_size)){
+for (i in 19:59){
   ssp <- colnames(data_size)[i]
-  
+  # print(ssp)
   p <- ggplot() +
-    geom_point(data = data_size[which(data_size$metric==metric & data_size$obs.p > pmin & data_size$obs.p < pmax),],  
-               aes(x = data_size[which(data_size$metric==metric  & data_size$obs.p > pmin & data_size$obs.p < pmax),i], y = -obs.z),
+    geom_point(data = data_size[which(data_size$metric==metric),],  
+               aes(x = data_size[which(data_size$metric==metric),i], y = -obs.z),
                size=1.5, color = "grey60", fill = alpha("grey60",.0),  shape = 21) +
-    geom_point(data = data_size[which(data_size$metric==metric & data_size$obs.p < pmin),], 
-               aes(x = data_size[which(data_size$metric==metric & data_size$obs.p < pmin),i], y = -obs.z),
-               color = "blue" , fill = alpha("blue",.2) , size=1.5, shape = 21, stroke =0.5) +
-    geom_point(data = data_size[which(data_size$metric==metric & data_size$obs.p > pmax),], 
-               aes(x = data_size[which(data_size$metric==metric & data_size$obs.p > pmax),i], y = -obs.z),
-               color = "red", fill = alpha("red",.3), size=1.5, shape = 21, stroke =0.8) +
     geom_hline(yintercept=0, linetype="dotted", lwd = 1) +
     theme_bw() +   
     theme(axis.text=element_text(size = 14, colour = "black"), 
           axis.title=element_text(size= 16, colour = "black")) +
-    labs(x = ssp, y = metric) +
-    scale_y_continuous(breaks = seq(-4,2,2),limits=c(-4.2,3), expand = c(0, 0))
+    labs(x = ssp, y = metric)
+    # scale_y_continuous(breaks = seq(-4,2,2),limits=c(-4.2,3), expand = c(0, 0))
   
   png(paste("output/spatial_species/si_fig_",metric,"_rel_abund_",ssp,".png", sep =""), width = 6, height = 4.5, unit = "in", res = 400)
      print(p)
   dev.off()
-  
 }
+
+
+#***************************************************************************************************
+### Temporal analysis & plots ***
+#********************************
+print("------------------------------------------")
+print("------------------------------------------")
+print("------------------------------------------")
+print("Time series analysis")
+print("------------------------------------------")
+
+source("R/main_time.R")
+
+
 
 
