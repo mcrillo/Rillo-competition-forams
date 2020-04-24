@@ -14,7 +14,6 @@
 rm(list=ls())
 
 # Working directory 
-setwd("/Users/marinacostarillo/Dropbox/PhD/projects")
 setwd("./Rillo-competition-forams")
 
 # Output
